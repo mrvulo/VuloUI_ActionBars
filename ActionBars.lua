@@ -90,57 +90,123 @@ end
 
 local BAR_DEFAULTS = {
     [1] = {
-        id=1, page=1, numButtons=12, size=36, spacing=3, scale=1.0,
-        rows=1, point="BOTTOM", x=0, y=14,
-        fadeOOC=false, alpha=1.0, alphaOOC=0.6,
+        id=1, page=1,
+        -- LAYOUT
+        numButtons=12, rows=1, orientation="horizontal",
+        size=36, spacing=3, scale=1.0,
+        point="BOTTOM", x=0, y=14,
+        -- VISIBILITY
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        -- ICONS
+        borderEnabled=true,
+        borderColor={r=0.06, g=0.05, b=0.10, a=1.0},
+        borderSize=1,
+        bgEnabled=false,
+        bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true,
+        outOfRangeColor={r=0.8, g=0.1, b=0.1},
+        -- TEXT
         showHotkey=true, showCount=true, showMacro=false,
-        showCondition="always",  -- always, combat, ooc, mounted, novehicle, custom
-        customMacro="",            -- für showCondition="custom"
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1},
+        keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        -- ALPHA + FADE
+        alpha=1.0, alphaOOC=0.6, fadeOOC=false,
+        -- META
         enabled=true,
     },
     [2] = {
-        id=2, page=2, numButtons=12, size=36, spacing=3, scale=1.0,
-        rows=1, point="BOTTOM", x=0, y=56,
-        fadeOOC=true, alpha=1.0, alphaOOC=0.35,
+        id=2, page=2, numButtons=12, rows=1, orientation="horizontal",
+        size=36, spacing=3, scale=1.0,
+        point="BOTTOM", x=0, y=56,
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        borderEnabled=true, borderColor={r=0.06, g=0.05, b=0.10, a=1.0}, borderSize=1,
+        bgEnabled=false, bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true, outOfRangeColor={r=0.8, g=0.1, b=0.1},
         showHotkey=true, showCount=true, showMacro=false,
-        showCondition="always",
-        customMacro="",
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1}, keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        alpha=1.0, alphaOOC=0.35, fadeOOC=true,
         enabled=true,
     },
     [3] = {
-        id=3, page=3, numButtons=6, size=36, spacing=3, scale=1.0,
-        rows=6, point="LEFT", x=14, y=0,
-        fadeOOC=true, alpha=1.0, alphaOOC=0.35,
+        id=3, page=3, numButtons=6, rows=6, orientation="vertical",
+        size=36, spacing=3, scale=1.0,
+        point="LEFT", x=14, y=0,
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        borderEnabled=true, borderColor={r=0.06, g=0.05, b=0.10, a=1.0}, borderSize=1,
+        bgEnabled=false, bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true, outOfRangeColor={r=0.8, g=0.1, b=0.1},
         showHotkey=true, showCount=true, showMacro=false,
-        showCondition="always",
-        customMacro="",
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1}, keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        alpha=1.0, alphaOOC=0.35, fadeOOC=true,
         enabled=true,
     },
     [4] = {
-        id=4, page=4, numButtons=6, size=36, spacing=3, scale=1.0,
-        rows=6, point="RIGHT", x=-14, y=0,
-        fadeOOC=true, alpha=1.0, alphaOOC=0.35,
+        id=4, page=4, numButtons=6, rows=6, orientation="vertical",
+        size=36, spacing=3, scale=1.0,
+        point="RIGHT", x=-14, y=0,
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        borderEnabled=true, borderColor={r=0.06, g=0.05, b=0.10, a=1.0}, borderSize=1,
+        bgEnabled=false, bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true, outOfRangeColor={r=0.8, g=0.1, b=0.1},
         showHotkey=true, showCount=true, showMacro=false,
-        showCondition="always",
-        customMacro="",
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1}, keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        alpha=1.0, alphaOOC=0.35, fadeOOC=true,
         enabled=true,
     },
     [5] = {
-        id=5, page=5, numButtons=12, size=32, spacing=3, scale=1.0,
-        rows=1, point="BOTTOM", x=0, y=98,
-        fadeOOC=true, alpha=0.9, alphaOOC=0.2,
+        id=5, page=5, numButtons=12, rows=1, orientation="horizontal",
+        size=32, spacing=3, scale=1.0,
+        point="BOTTOM", x=0, y=98,
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        borderEnabled=true, borderColor={r=0.06, g=0.05, b=0.10, a=1.0}, borderSize=1,
+        bgEnabled=false, bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true, outOfRangeColor={r=0.8, g=0.1, b=0.1},
         showHotkey=false, showCount=true, showMacro=false,
-        showCondition="always",
-        customMacro="",
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1}, keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        alpha=0.9, alphaOOC=0.2, fadeOOC=true,
         enabled=false,
     },
     [6] = {
-        id=6, page=6, numButtons=12, size=32, spacing=3, scale=1.0,
-        rows=1, point="BOTTOM", x=0, y=136,
-        fadeOOC=true, alpha=0.9, alphaOOC=0.2,
+        id=6, page=6, numButtons=12, rows=1, orientation="horizontal",
+        size=32, spacing=3, scale=1.0,
+        point="BOTTOM", x=0, y=136,
+        showCondition="always", customMacro="",
+        mouseoverEnabled=false, mouseoverAlpha=0.0, mouseoverSpeed=0.15,
+        clickThrough=false,
+        borderEnabled=true, borderColor={r=0.06, g=0.05, b=0.10, a=1.0}, borderSize=1,
+        bgEnabled=false, bgColor={r=0, g=0, b=0, a=0.5},
+        outOfRangeColoring=true, outOfRangeColor={r=0.8, g=0.1, b=0.1},
         showHotkey=false, showCount=true, showMacro=false,
-        showCondition="always",
-        customMacro="",
+        keybindFontSize=10, keybindColor={r=1, g=1, b=1}, keybindOffsetX=0, keybindOffsetY=0,
+        macroFontSize=9, macroColor={r=1, g=1, b=1},
+        countFontSize=11, countColor={r=1, g=1, b=1},
+        cooldownFontSize=14, cooldownColor={r=1, g=0.85, b=0.2},
+        alpha=0.9, alphaOOC=0.2, fadeOOC=true,
         enabled=false,
     },
 }
@@ -449,12 +515,30 @@ local function CreateActionButton(barID, slot, cfg)
         if outOfRangeKnown then
             self.outOfRange:Show()
             self.notUsable:Hide()
+            -- Out-of-Range-Coloring: Icon rot einfärben wenn enabled
+            if self._outOfRangeColoring and self.GetNormalTexture then
+                local nt = self:GetNormalTexture()
+                if nt then
+                    local c = self._outOfRangeColor or {r=0.8,g=0.1,b=0.1}
+                    nt:SetVertexColor(c.r, c.g, c.b)
+                end
+            end
         elseif usable == false or oom == true then
             self.notUsable:Show()
             self.outOfRange:Hide()
+            -- Icon-Farbe zurücksetzen
+            if self.GetNormalTexture then
+                local nt = self:GetNormalTexture()
+                if nt then nt:SetVertexColor(1, 1, 1) end
+            end
         else
             self.notUsable:Hide()
             self.outOfRange:Hide()
+            -- Icon-Farbe zurücksetzen
+            if self.GetNormalTexture then
+                local nt = self:GetNormalTexture()
+                if nt then nt:SetVertexColor(1, 1, 1) end
+            end
         end
 
         -- Checked (Toggle-Spells wie Autoattack). IsCurrentAction /
@@ -589,11 +673,32 @@ local function CreateActionBar(cfg)
         if self.fadeElapsed < 0.05 then return end
         self.fadeElapsed = 0
 
+        -- Mouseover-Mode: Bar fade auf mouseoverAlpha wenn nicht
+        -- gehovered. Wir checken jeden Button + die Bar selbst.
+        if self._mouseoverEnabled then
+            local hovered = self:IsMouseOver()
+            if not hovered and self.buttons then
+                for _, b in ipairs(self.buttons) do
+                    if b:IsShown() and b:IsMouseOver() then
+                        hovered = true
+                        break
+                    end
+                end
+            end
+            local desired = hovered and (self.cfg.alpha or 1.0)
+                                     or (self._mouseoverAlpha or 0.0)
+            self.targetAlpha = desired
+        end
+
         -- Smooth Fade
         local diff = self.targetAlpha - self.currentAlpha
         if math.abs(diff) > 0.01 then
-            self.currentAlpha = self.currentAlpha +
-                diff * 0.2  -- Fade-Speed
+            -- Speed: aus mouseoverSpeed (0.05-1.0) berechnet, sonst 0.2
+            local speed = self._mouseoverSpeed or 0.2
+            -- Begrenze auf vernünftigen Bereich
+            if speed < 0.02 then speed = 0.02 end
+            if speed > 1.0  then speed = 1.0 end
+            self.currentAlpha = self.currentAlpha + diff * speed
             self:SetAlpha(self.currentAlpha)
         elseif math.abs(diff) > 0 then
             self.currentAlpha = self.targetAlpha
@@ -610,7 +715,7 @@ local function CreateActionBar(cfg)
         end
     end
 
-    -- Mouseover-Fade
+    -- Mouseover-Fade Default
     bar:EnableMouse(false)  -- damit Maus durch Container geht
 
     -- ── VERSCHIEBEN (nur im Config-Modus) ───────────────────
@@ -990,6 +1095,51 @@ function AB:OnInitialize()
             self.bars[i] = bar
         end
     end
+
+    -- ── UnlockMode Registry ─────────────────────────────
+    -- Nur Bars registrieren, die tatsächlich erstellt wurden.
+    -- Deaktivierte Bars (enabled=false in BAR_DEFAULTS) werden in
+    -- AB.bars nicht eingetragen → wir überspringen sie hier.
+    if V and V.RegisterUnlockElements then
+        local elems = {}
+        for i = 1, 6 do
+            if AB.bars[i] then
+                local barID = i
+                table.insert(elems, {
+                    key = "VuloUI_AB_Bar"..i,
+                    label = "Action Bar "..i,
+                    getFrame = function() return AB.bars[barID] end,
+                    savePos = function(point, x, y)
+                        if not V.db.actionBars then V.db.actionBars = {} end
+                        if not V.db.actionBars[barID] then
+                            V.db.actionBars[barID] = {}
+                        end
+                        V.db.actionBars[barID].x = x
+                        V.db.actionBars[barID].y = y
+                        V.db.actionBars[barID].point = point
+                    end,
+                    loadPos = function()
+                        local bar = AB.bars[barID]
+                        local saved = V.db.actionBars and V.db.actionBars[barID]
+                        if not bar or not saved then return end
+                        if saved.x and saved.y then
+                            bar:ClearAllPoints()
+                            bar:SetPoint(saved.point or "CENTER", UIParent,
+                                saved.point or "CENTER", saved.x, saved.y)
+                        end
+                    end,
+                    resetPos = function()
+                        if V.db.actionBars and V.db.actionBars[barID] then
+                            V.db.actionBars[barID].x = nil
+                            V.db.actionBars[barID].y = nil
+                            V.db.actionBars[barID].point = nil
+                        end
+                    end,
+                })
+            end
+        end
+        V:RegisterUnlockElements(elems)
+    end
 end
 
 function AB:OnEnable()
@@ -1086,13 +1236,23 @@ function AB:ApplyBarSettings(barID)
         end
     end
 
-    -- Größen neu berechnen
+    -- Größen neu berechnen. Orientation bestimmt rows/cols-Berechnung:
+    --   horizontal: cols = ceil(numButtons/rows)
+    --   vertical:   rows = ceil(numButtons/cols), wir nutzen cfg.rows als
+    --               cols-Wert (UI-Konsistenz)
     local size    = P(cfg.size or 36)
     local spacing = P(cfg.spacing or 3)
-    local rows    = math.max(1, cfg.rows or 1)
-    local cols    = math.ceil((cfg.numButtons or 12) / rows)
-    local barW    = cols * size + (cols - 1) * spacing
-    local barH    = rows * size + (rows - 1) * spacing
+    local numBtns = cfg.numButtons or 12
+    local rows, cols
+    if (cfg.orientation or "horizontal") == "vertical" then
+        cols = math.max(1, cfg.rows or 1)
+        rows = math.ceil(numBtns / cols)
+    else
+        rows = math.max(1, cfg.rows or 1)
+        cols = math.ceil(numBtns / rows)
+    end
+    local barW = cols * size + (cols - 1) * spacing
+    local barH = rows * size + (rows - 1) * spacing
 
     -- Container-Größe + Position
     bar:SetSize(barW, barH)
@@ -1103,40 +1263,125 @@ function AB:ApplyBarSettings(barID)
     -- Skalierung
     bar:SetScale(cfg.scale or 1.0)
 
-    -- Buttons: erst alle verstecken, dann nur die aktiven re-positionieren
+    -- Hintergrund (optional)
+    if cfg.bgEnabled then
+        if not bar.bgTex then
+            bar.bgTex = bar:CreateTexture(nil, "BACKGROUND")
+            bar.bgTex:SetAllPoints(bar)
+        end
+        local c = cfg.bgColor or {r=0,g=0,b=0,a=0.5}
+        bar.bgTex:SetColorTexture(c.r, c.g, c.b, c.a or 0.5)
+        bar.bgTex:Show()
+    elseif bar.bgTex then
+        bar.bgTex:Hide()
+    end
+
+    -- Buttons: Layout + Sichtbarkeit + Border + Text
     for i, btn in ipairs(bar.buttons) do
-        if i <= (cfg.numButtons or 12) then
-            local col = ((i - 1) % cols)
-            local row = math.floor((i - 1) / cols)
+        if i <= numBtns then
+            local col, row
+            if (cfg.orientation or "horizontal") == "vertical" then
+                row = ((i - 1) % rows)
+                col = math.floor((i - 1) / rows)
+            else
+                col = ((i - 1) % cols)
+                row = math.floor((i - 1) / cols)
+            end
             btn:SetSize(size, size)
             btn:ClearAllPoints()
             btn:SetPoint("TOPLEFT", bar, "TOPLEFT",
                 col * (size + spacing),
                -row * (size + spacing))
             btn:Show()
-            -- Hotkey/Count/Macro Sichtbarkeit
+
+            -- Border-Farbe + Sichtbarkeit
+            if btn.border then
+                if cfg.borderEnabled then
+                    local bc = cfg.borderColor or {r=0.06,g=0.05,b=0.10,a=1.0}
+                    btn.border:SetBackdropBorderColor(bc.r, bc.g, bc.b, bc.a or 1.0)
+                    btn.border:Show()
+                else
+                    btn.border:Hide()
+                end
+            end
+
+            -- Hotkey-Text Sichtbarkeit + Font-Größe + Farbe + Offset
             if btn.hotkeyText then
-                if cfg.showHotkey then btn.hotkeyText:Show()
-                else btn.hotkeyText:Hide() end
+                if cfg.showHotkey then
+                    btn.hotkeyText:Show()
+                    local fSize = P(cfg.keybindFontSize or 10)
+                    btn.hotkeyText:SetFont(GetFont(), fSize, "OUTLINE")
+                    local kc = cfg.keybindColor or {r=1,g=1,b=1}
+                    btn.hotkeyText:SetTextColor(kc.r, kc.g, kc.b, 1)
+                    -- Anker neu setzen mit Offset
+                    btn.hotkeyText:ClearAllPoints()
+                    btn.hotkeyText:SetPoint("TOPRIGHT", btn, "TOPRIGHT",
+                        P(cfg.keybindOffsetX or 0), P(cfg.keybindOffsetY or 0))
+                else
+                    btn.hotkeyText:Hide()
+                end
             end
+
+            -- Counter Sichtbarkeit + Font + Farbe
             if btn.countText then
-                if cfg.showCount then btn.countText:Show()
-                else btn.countText:Hide() end
+                if cfg.showCount then
+                    btn.countText:Show()
+                    btn.countText:SetFont(GetFont(),
+                        P(cfg.countFontSize or 11), "OUTLINE")
+                    local cc = cfg.countColor or {r=1,g=1,b=1}
+                    btn.countText:SetTextColor(cc.r, cc.g, cc.b, 1)
+                else
+                    btn.countText:Hide()
+                end
             end
+
+            -- Macro-Text Sichtbarkeit + Font
             if btn.macroText then
-                if cfg.showMacro then btn.macroText:Show()
-                else btn.macroText:Hide() end
+                if cfg.showMacro then
+                    btn.macroText:Show()
+                    btn.macroText:SetFont(GetFont(),
+                        P(cfg.macroFontSize or 9), "OUTLINE")
+                    local mc = cfg.macroColor or {r=1,g=1,b=1}
+                    btn.macroText:SetTextColor(mc.r, mc.g, mc.b, 1)
+                else
+                    btn.macroText:Hide()
+                end
             end
+
+            -- Cooldown-Text-Größe + Farbe (wird in OnUpdate angewendet)
+            btn._cooldownFontSize = cfg.cooldownFontSize or 14
+            btn._cooldownColor    = cfg.cooldownColor or {r=1,g=0.85,b=0.2}
+            if btn.cdText then
+                local ccc = btn._cooldownColor
+                btn.cdText:SetTextColor(ccc.r, ccc.g, ccc.b, 1)
+            end
+
+            -- Out-of-Range-Coloring
+            btn._outOfRangeColoring = cfg.outOfRangeColoring
+            btn._outOfRangeColor    = cfg.outOfRangeColor or {r=0.8,g=0.1,b=0.1}
+
             btn:UpdateAction()
         else
             btn:Hide()
         end
     end
 
+    -- Click-Through (Mouse-Event-Pass-Through)
+    if cfg.clickThrough then
+        bar:EnableMouse(false)
+    else
+        -- bar:EnableMouse wird im Drag-Mode separat gemanaget
+    end
+
     -- Alpha + Fade
     bar.targetAlpha  = cfg.alpha or 1.0
     bar.currentAlpha = cfg.alpha or 1.0
     bar:SetAlpha(bar.targetAlpha)
+
+    -- Mouseover-Settings im Bar-Frame speichern für OnUpdate-Logik
+    bar._mouseoverEnabled = cfg.mouseoverEnabled
+    bar._mouseoverAlpha   = cfg.mouseoverAlpha or 0.0
+    bar._mouseoverSpeed   = cfg.mouseoverSpeed or 0.15
 
     -- Show-Condition ist absichtlich NICHT von hier aufgerufen weil
     -- RegisterStateDriver Tainting verursachen kann wenn aus dem
