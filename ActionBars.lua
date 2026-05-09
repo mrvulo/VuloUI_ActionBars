@@ -14,11 +14,44 @@ end
 local V   = VuloUI
 local LSM = LibStub("LibSharedMedia-3.0")
 
+-- ============================================================
+--  SECRET-VALUE HELPERS (WoW 12.0)
+--  Manche API-Returns sind "secret values" und dürfen nicht
+--  verglichen, concateniert oder als Tabellen-Key benutzt werden.
+-- ============================================================
+
+local issecretvalue  = _G.issecretvalue  or function() return false end
+local canaccesstable = _G.canaccesstable or function() return true end
+
+-- Sichere Zahl: nur returnen wenn definitiv kein secret value.
+-- WICHTIG: issecretvalue() MUSS vor type() geprüft werden, weil ein
+-- "secret number value" zwar type=="number" hat, aber nicht verglichen
+-- werden darf.
+local function SafeNum(v)
+    if v == nil then return nil end
+    if issecretvalue(v) then return nil end
+    if type(v) == "number" then return v end
+    local n = tonumber(v)
+    if n then return n end
+    return nil
+end
+
+-- Sicherer Boolean: gleiche Logik
+local function SafeBool(v)
+    if v == nil then return nil end
+    if issecretvalue(v) then return nil end
+    if type(v) == "boolean" then return v end
+    return v and true or false
+end
+
 local AB   = {}
 AB.bars    = {}
 AB.buttons = {}
 
 V:RegisterModule("ActionBars", AB)
+
+-- Expose global
+VuloUI_ActionBars = AB
 
 -- ============================================================
 --  PIXEL-PERFECT
@@ -57,45 +90,57 @@ end
 
 local BAR_DEFAULTS = {
     [1] = {
-        id=1, page=1, numButtons=12, size=36, spacing=3,
+        id=1, page=1, numButtons=12, size=36, spacing=3, scale=1.0,
         rows=1, point="BOTTOM", x=0, y=14,
         fadeOOC=false, alpha=1.0, alphaOOC=0.6,
         showHotkey=true, showCount=true, showMacro=false,
+        showCondition="always",  -- always, combat, ooc, mounted, novehicle, custom
+        customMacro="",            -- für showCondition="custom"
         enabled=true,
     },
     [2] = {
-        id=2, page=2, numButtons=12, size=36, spacing=3,
+        id=2, page=2, numButtons=12, size=36, spacing=3, scale=1.0,
         rows=1, point="BOTTOM", x=0, y=56,
         fadeOOC=true, alpha=1.0, alphaOOC=0.35,
         showHotkey=true, showCount=true, showMacro=false,
+        showCondition="always",
+        customMacro="",
         enabled=true,
     },
     [3] = {
-        id=3, page=3, numButtons=6, size=36, spacing=3,
+        id=3, page=3, numButtons=6, size=36, spacing=3, scale=1.0,
         rows=6, point="LEFT", x=14, y=0,
         fadeOOC=true, alpha=1.0, alphaOOC=0.35,
         showHotkey=true, showCount=true, showMacro=false,
+        showCondition="always",
+        customMacro="",
         enabled=true,
     },
     [4] = {
-        id=4, page=4, numButtons=6, size=36, spacing=3,
+        id=4, page=4, numButtons=6, size=36, spacing=3, scale=1.0,
         rows=6, point="RIGHT", x=-14, y=0,
         fadeOOC=true, alpha=1.0, alphaOOC=0.35,
         showHotkey=true, showCount=true, showMacro=false,
+        showCondition="always",
+        customMacro="",
         enabled=true,
     },
     [5] = {
-        id=5, page=5, numButtons=12, size=32, spacing=3,
+        id=5, page=5, numButtons=12, size=32, spacing=3, scale=1.0,
         rows=1, point="BOTTOM", x=0, y=98,
         fadeOOC=true, alpha=0.9, alphaOOC=0.2,
         showHotkey=false, showCount=true, showMacro=false,
+        showCondition="always",
+        customMacro="",
         enabled=false,
     },
     [6] = {
-        id=6, page=6, numButtons=12, size=32, spacing=3,
+        id=6, page=6, numButtons=12, size=32, spacing=3, scale=1.0,
         rows=1, point="BOTTOM", x=0, y=136,
         fadeOOC=true, alpha=0.9, alphaOOC=0.2,
         showHotkey=false, showCount=true, showMacro=false,
+        showCondition="always",
+        customMacro="",
         enabled=false,
     },
 }
@@ -293,11 +338,21 @@ local function CreateActionButton(barID, slot, cfg)
             self.bg:SetColorTexture(0.06, 0.06, 0.10, 0.9)
         end
 
-        -- Macro-Name
-        if cfg.showMacro and actionType == "macro" then
-            local name = GetMacroInfo(id)
-            self.macroText:SetText(name or "")
-            self.macroText:Show()
+        -- Macro-Name. actionType und id können in WoW 12.0 secret values
+        -- sein, daher mit issecretvalue prüfen bevor wir sie als String
+        -- vergleichen oder als Argument übergeben.
+        if cfg.showMacro
+           and actionType ~= nil and not issecretvalue(actionType)
+           and actionType == "macro"
+           and id ~= nil and not issecretvalue(id) then
+            local idN = SafeNum(id)
+            if idN then
+                local name = GetMacroInfo(idN)
+                self.macroText:SetText(name or "")
+                self.macroText:Show()
+            else
+                self.macroText:SetText("")
+            end
         else
             self.macroText:SetText("")
         end
@@ -342,13 +397,24 @@ local function CreateActionButton(barID, slot, cfg)
     end
 
     function btn:UpdateCooldown()
-        local start, duration, enable =
-            GetActionCooldown(self.globalSlot)
+        -- GetActionCooldown kann in WoW 12.0 secret values returnen.
+        -- Wir umhüllen mit pcall und SafeNum.
+        local ok, start, duration, enable = pcall(GetActionCooldown,
+                                                  self.globalSlot)
+        if not ok then
+            self.cooldown:Clear()
+            self.cdActive = false
+            self.cdText:Hide()
+            return
+        end
 
-        if start > 0 and duration > 1.5 then
-            self.cooldown:SetCooldown(start, duration)
-            self.cdStart    = start
-            self.cdDuration = duration
+        local startN    = SafeNum(start)
+        local durationN = SafeNum(duration)
+
+        if startN and durationN and startN > 0 and durationN > 1.5 then
+            self.cooldown:SetCooldown(startN, durationN)
+            self.cdStart    = startN
+            self.cdDuration = durationN
             self.cdActive   = true
             self.cdText:Show()
         else
@@ -365,15 +431,25 @@ local function CreateActionButton(barID, slot, cfg)
             return
         end
 
-        local usable, oom = IsUsableAction(self.globalSlot)
-        local inRange     = IsActionInRange(self.globalSlot)
+        -- IsUsableAction / IsActionInRange können in WoW 12.0 secret
+        -- values returnen. Mit SafeBool umhüllen.
+        local usableRaw, oomRaw = IsUsableAction(self.globalSlot)
+        local rangeRaw          = IsActionInRange(self.globalSlot)
 
-        -- Außer Reichweite: rotes Overlay
-        if inRange == false then
+        local usable = SafeBool(usableRaw)
+        local oom    = SafeBool(oomRaw)
+        -- inRange kann true/false/nil sein (nil = kein Range-Check möglich).
+        -- Wir nehmen den Wert nur wenn er sicher und definitiv false ist.
+        local outOfRangeKnown = (rangeRaw == false)
+        if rangeRaw ~= nil and rangeRaw ~= false and rangeRaw ~= true
+           and issecretvalue(rangeRaw) then
+            outOfRangeKnown = false  -- secret -> ignorieren
+        end
+
+        if outOfRangeKnown then
             self.outOfRange:Show()
             self.notUsable:Hide()
-        -- Nicht nutzbar (kein Mana, falsche Stance): ausgegraut
-        elseif not usable or oom then
+        elseif usable == false or oom == true then
             self.notUsable:Show()
             self.outOfRange:Hide()
         else
@@ -381,14 +457,17 @@ local function CreateActionButton(barID, slot, cfg)
             self.outOfRange:Hide()
         end
 
-        -- Checked (Toggle-Spells wie Autoattack)
-        self:SetChecked(IsCurrentAction(self.globalSlot) or
-                        IsAutoRepeatAction(self.globalSlot))
+        -- Checked (Toggle-Spells wie Autoattack). IsCurrentAction /
+        -- IsAutoRepeatAction können secret booleans returnen - mit
+        -- SafeBool prüfen.
+        local cur = SafeBool(IsCurrentAction(self.globalSlot))
+        local rep = SafeBool(IsAutoRepeatAction(self.globalSlot))
+        self:SetChecked((cur == true) or (rep == true))
     end
 
     function btn:UpdateCount()
         if not cfg.showCount then return end
-        local count = GetActionCount(self.globalSlot)
+        local count = SafeNum(GetActionCount(self.globalSlot))
         if count and count > 0 then
             self.countText:SetText(count)
             self.countText:Show()
@@ -467,22 +546,30 @@ local function CreateActionBar(cfg)
     bar.cfg = cfg
     bar.buttons = {}
 
-    -- Buttons erstellen und positionieren
-    for i = 1, cfg.numButtons do
+    -- Buttons erstellen und positionieren. Wir erstellen IMMER 12 Buttons
+    -- pro Bar, auch wenn numButtons < 12. Dadurch kann ApplyBarSettings
+    -- später live mehr/weniger zeigen ohne neue SecureFrames zu bauen
+    -- (was in Combat verboten wäre).
+    for i = 1, 12 do
         local btn = CreateActionButton(cfg.id, i, cfg)
 
-        -- Grid-Position berechnen
-        local col = ((i - 1) % cols)
-        local row = math.floor((i - 1) / cols)
+        if i <= cfg.numButtons then
+            -- Grid-Position berechnen
+            local col = ((i - 1) % cols)
+            local row = math.floor((i - 1) / cols)
 
-        btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", bar, "TOPLEFT",
-            col * (size + spacing),
-           -row * (size + spacing))
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", bar, "TOPLEFT",
+                col * (size + spacing),
+               -row * (size + spacing))
 
-        btn:SetParent(bar)
-        btn:Show()
-        btn:UpdateAction()
+            btn:SetParent(bar)
+            btn:Show()
+            btn:UpdateAction()
+        else
+            btn:SetParent(bar)
+            btn:Hide()
+        end
 
         bar.buttons[i] = btn
         if not AB.buttons[cfg.id] then
@@ -544,6 +631,10 @@ end
 
 -- ============================================================
 --  BLIZZARD BARS VERSTECKEN
+--  In WoW 12.0 managed Edit-Mode die Action-Bars - ein einfaches
+--  :Hide() reicht nicht mehr, weil Edit-Mode sie wieder anzeigt.
+--  Lösung: Parent auf einen versteckten Frame setzen, dann sind
+--  sie für Edit-Mode "weg".
 -- ============================================================
 
 local BLIZZARD_BARS = {
@@ -555,48 +646,92 @@ local BLIZZARD_BARS = {
     "StanceBar",
     "PossessActionBar",
     "MainMenuBarVehicleLeaveButton",
-    "MicroButtonAndBagsBar",
-    "MainMenuBarBackpackButton",
-    "CharacterMicroButton",
-    "SpellbookMicroButton",
-    "TalentMicroButton",
-    "AchievementMicroButton",
-    "QuestLogMicroButton",
-    "GuildMicroButton",
-    "LFDMicroButton",
-    "CollectionsMicroButton",
-    "EJMicroButton",
-    "StoreMicroButton",
-    "MainMenuMicroButton",
-    "HelpMicroButton",
+    -- Bags + Micro-Buttons NICHT killen, du willst die behalten
+    -- Status-Tracking (XP/Honor/Rep) auch behalten
 }
 
+-- Hidden Parent (der Frame ist nie sichtbar - alles was hier reingeparented
+-- wird ist effektiv unsichtbar UND von Edit-Mode unauffindbar).
+local hiddenFrame = CreateFrame("Frame", "VuloUIHiddenBarParent", UIParent)
+hiddenFrame:Hide()
+
+local function KillFrame(f)
+    if not f then return end
+    -- Sanfter Ansatz: NICHT reparent (das taintet Edit-Mode + Compact
+    -- Party Frames). Stattdessen einfach:
+    --   1. Events abmelden (verhindert Re-Show durch Blizzard-Logic)
+    --   2. Alpha=0 (unsichtbar)
+    --   3. Mouse abschalten (nicht klickbar)
+    -- Wir lassen den Frame im Frame-Tree, sodass Edit-Mode normal arbeiten kann.
+    if f.UnregisterAllEvents then f:UnregisterAllEvents() end
+    if f.SetAlpha then f:SetAlpha(0) end
+    if f.EnableMouse then f:EnableMouse(false) end
+    if f.Hide then f:Hide() end
+end
+
 local function HideBlizzardBars()
-    for _, name in ipairs(BLIZZARD_BARS) do
-        local f = _G[name]
-        if f then
-            f:UnregisterAllEvents()
-            f:Hide()
-            -- SecureHandler damit es in Kämpfen versteckt bleibt
-            if f.HidePartyFrame then f:HidePartyFrame() end
-        end
+    -- Niemals in Combat ausführen - SecureFrames könnten geprotectet sein.
+    -- Wenn wir in Combat sind, nochmal versuchen sobald Combat endet.
+    if InCombatLockdown and InCombatLockdown() then
+        local f = CreateFrame("Frame")
+        f:RegisterEvent("PLAYER_REGEN_ENABLED")
+        f:SetScript("OnEvent", function(self)
+            self:UnregisterAllEvents()
+            HideBlizzardBars()
+        end)
+        return
     end
 
-    -- MainMenuBar Textur (die Bodenleiste) verstecken
+    for _, name in ipairs(BLIZZARD_BARS) do
+        KillFrame(_G[name])
+    end
+
+    -- MainMenuBar zusätzlich (wird von KillFrame schon erfasst, aber
+    -- doppelte Sicherheit für die Hauptleiste)
     if MainMenuBar then
         MainMenuBar:SetAlpha(0)
         MainMenuBar:EnableMouse(false)
     end
 
-    -- Exp/Rep-Bar verstecken
-    if MainMenuExpBar then
-        MainMenuExpBar:UnregisterAllEvents()
-        MainMenuExpBar:Hide()
+    -- Edit-Mode kennt die Action-Bar-Buttons einzeln. Auch die
+    -- Container-Frames für die Buttons der MultiBars verstecken.
+    for _, name in ipairs({
+        "ActionBarUpButton", "ActionBarDownButton",
+        "MainMenuBarPageNumber",
+        "OverrideActionBar",
+    }) do
+        KillFrame(_G[name])
     end
 
-    -- Status-Tracking Bars
-    if StatusTrackingBarManager then
-        StatusTrackingBarManager:Hide()
+    -- Einzelne ActionButtons aller MultiBars + ihre Hotkey/Name/Count-Texte.
+    -- Sanfter Ansatz wie KillFrame: nur Alpha+Hide, KEIN Reparent (taint!)
+    for i = 1, 12 do
+        for _, prefix in ipairs({
+            "ActionButton",
+            "MultiBarBottomLeftButton",
+            "MultiBarBottomRightButton",
+            "MultiBarRightButton",
+            "MultiBarLeftButton",
+            "MultiBar5Button",
+            "MultiBar6Button",
+            "MultiBar7Button",
+        }) do
+            local btn = _G[prefix..i]
+            if btn then
+                btn:UnregisterAllEvents()
+                btn:SetAlpha(0)
+                btn:EnableMouse(false)
+                btn:Hide()
+
+                -- Texte explizit ausschalten
+                local hk = _G[prefix..i.."HotKey"]
+                local nm = _G[prefix..i.."Name"]
+                local cn = _G[prefix..i.."Count"]
+                if hk and hk.SetText then hk:SetText("") hk:Hide() end
+                if nm and nm.SetText then nm:SetText("") nm:Hide() end
+                if cn and cn.SetText then cn:SetText("") cn:Hide() end
+            end
+        end
     end
 end
 
@@ -703,6 +838,42 @@ end)
 
 local lockOverlays = {}
 
+-- ============================================================
+--  DRAG-AND-DROP für Bar-Position
+--  Beim Unlock: Bars werden draggable. Nach jedem Drop wird die
+--  neue Position in der DB gespeichert + ApplyBarSettings live
+--  ausgeführt damit andere Settings bestehen bleiben.
+-- ============================================================
+
+local function MakeBarDraggable(bar, barID)
+    bar:SetMovable(true)
+    bar:RegisterForDrag("LeftButton")
+    bar:SetScript("OnDragStart", function(self)
+        if InCombatLockdown and InCombatLockdown() then return end
+        self:StartMoving()
+    end)
+    bar:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        -- Position in DB speichern (relativ zu BOTTOMLEFT-Anker für
+        -- konsistente Werte unabhängig vom alten point)
+        local p = "BOTTOMLEFT"
+        local _, _, _, x, y = self:GetPoint()
+        if not V.db then V.db = {} end
+        V.db.actionBars = V.db.actionBars or {}
+        V.db.actionBars[barID] = V.db.actionBars[barID] or {}
+        -- Wir speichern die Position als BOTTOMLEFT-relativ zum
+        -- UIParent's BOTTOMLEFT, das ist robust gegen Resolution-Änderungen
+        local effScale = self:GetEffectiveScale()
+        local screenH  = UIParent:GetHeight()
+        V.db.actionBars[barID].point = "BOTTOMLEFT"
+        V.db.actionBars[barID].x = x or 0
+        V.db.actionBars[barID].y = y or 0
+        -- Nach dem Drag: Settings re-applyen damit Anker auf BOTTOMLEFT
+        -- aktualisiert wird
+        AB:ApplyBarSettings(barID)
+    end)
+end
+
 function AB:Unlock()
     for barID, bar in pairs(self.bars) do
         if not lockOverlays[barID] then
@@ -729,6 +900,11 @@ function AB:Unlock()
         end
         lockOverlays[barID]:Show()
         bar:EnableMouse(true)
+        -- Drag-Handler aktivieren (einmalig pro Bar)
+        if not bar._dragInited then
+            MakeBarDraggable(bar, barID)
+            bar._dragInited = true
+        end
     end
 end
 
@@ -738,6 +914,45 @@ function AB:Lock()
             lockOverlays[barID]:Hide()
         end
         bar:EnableMouse(false)
+        -- Drag deaktivieren
+        bar:RegisterForDrag()
+    end
+end
+
+-- ============================================================
+--  SHOW-CONDITIONS (Visibility Macros)
+--  Nutzt RegisterStateDriver damit Bars in Combat ein-/ausgeblendet
+--  werden können (im Gegensatz zu Hide()) - SecureStateDriver ist
+--  combat-safe.
+-- ============================================================
+
+local SHOW_CONDITION_MACROS = {
+    always    = "show",
+    combat    = "[combat]show;hide",
+    ooc       = "[combat]hide;show",
+    mounted   = "[mounted]show;hide",
+    novehicle = "[vehicleui]hide;show",
+    nopet     = "[pet]hide;show",
+    petbattle = "[petbattle]show;hide",
+}
+
+function AB:UpdateBarVisibility(barID)
+    local bar = self.bars[barID]
+    if not bar then return end
+    local cfg = bar.cfg or {}
+
+    local cond = cfg.showCondition or "always"
+    local macro = SHOW_CONDITION_MACROS[cond] or "show"
+
+    -- Custom-Macro: User-defined "[combat]show;hide" usw.
+    if cond == "custom" and cfg.customMacro and cfg.customMacro ~= "" then
+        macro = cfg.customMacro
+    end
+
+    -- StateDriver registrieren (combat-safe, ersetzt vorherigen)
+    -- bar muss "Frame"-typed sein, kein SecureFrame nötig für visibility
+    if RegisterStateDriver and not InCombatLockdown() then
+        RegisterStateDriver(bar, "visibility", macro)
     end
 end
 
@@ -746,7 +961,9 @@ end
 -- ============================================================
 
 function AB:OnInitialize()
-    -- Config-Defaults sicherstellen
+    -- V.db kann beim ersten Boot noch nil sein (AceDB lädt erst nach
+    -- ADDON_LOADED). Defensiv prüfen.
+    if not V.db then V.db = {} end
     if not V.db.actionBars then
         V.db.actionBars = {}
     end
@@ -782,6 +999,169 @@ function AB:OnEnable()
     UpdateAllButtons()
 end
 
+-- Eine einzelne Bar aktivieren (von ConfigUI aufgerufen)
+function AB:EnableBar(barID)
+    -- Bar existiert schon → einfach zeigen
+    if self.bars[barID] then
+        self.bars[barID]:Show()
+        return
+    end
+    -- Bar existiert noch nicht → erstellen (nur wenn wir nicht in Combat sind)
+    if InCombatLockdown and InCombatLockdown() then
+        return
+    end
+    local cfg = BAR_DEFAULTS[barID]
+    if not cfg then return end
+    -- Settings aus DB übernehmen wenn vorhanden
+    local savedCfg = V.db and V.db.actionBars and V.db.actionBars[barID]
+    if savedCfg then
+        cfg.x = savedCfg.x or cfg.x
+        cfg.y = savedCfg.y or cfg.y
+    end
+    cfg.enabled = true
+    self.bars[barID] = CreateActionBar(cfg)
+    UpdateAllButtons()
+end
+
+-- Eine einzelne Bar deaktivieren (von ConfigUI aufgerufen)
+function AB:DisableBar(barID)
+    local bar = self.bars[barID]
+    if bar then
+        bar:Hide()
+    end
+end
+
+-- ============================================================
+--  LIVE-UPDATE: Bar-Settings anwenden ohne Neu-Erstellung
+--
+--  AB:ApplyBarSettings(barID) liest die aktuelle Config aus
+--  V.db.actionBars[barID] und wendet sie auf die bestehende Bar
+--  an. Wird von ConfigUI nach jedem Slider/Toggle-Change
+--  aufgerufen.
+--
+--  Settings die hier live geändert werden können:
+--    - x, y           → Position
+--    - point          → Anker (TOP/BOTTOM/LEFT/RIGHT/CENTER + Combos)
+--    - size           → Button-Größe
+--    - spacing        → Abstand zwischen Buttons
+--    - rows           → Anzahl Reihen (Spalten = ceil(numButtons/rows))
+--    - numButtons     → Anzahl Buttons (1-12)
+--    - alpha          → Transparenz
+--    - alphaOOC       → Transparenz out-of-combat
+--    - fadeOOC        → Fade-Out-of-Combat aktiv?
+--    - showHotkey     → Hotkey-Text anzeigen
+--    - showCount      → Counter anzeigen
+--    - showMacro      → Makro-Name anzeigen
+-- ============================================================
+
+function AB:ApplyBarSettings(barID)
+    local bar = self.bars[barID]
+    if not bar then return end
+
+    -- numButtons-Änderung erfordert SecureFrame-Änderung -> nicht in Combat
+    if InCombatLockdown and InCombatLockdown() then
+        -- Wir merken uns dass nach Combat ein Reapply nötig ist
+        if not self._pendingReapply then
+            self._pendingReapply = {}
+            local f = CreateFrame("Frame")
+            f:RegisterEvent("PLAYER_REGEN_ENABLED")
+            f:SetScript("OnEvent", function(s)
+                s:UnregisterAllEvents()
+                for id in pairs(self._pendingReapply) do
+                    self:ApplyBarSettings(id)
+                end
+                self._pendingReapply = nil
+            end)
+        end
+        self._pendingReapply[barID] = true
+        return
+    end
+
+    -- Aktuelle Config aus DB nehmen, Defaults als Fallback
+    local cfg = bar.cfg
+    local saved = V.db and V.db.actionBars and V.db.actionBars[barID]
+    if saved then
+        for k, v in pairs(saved) do
+            cfg[k] = v
+        end
+    end
+
+    -- Größen neu berechnen
+    local size    = P(cfg.size or 36)
+    local spacing = P(cfg.spacing or 3)
+    local rows    = math.max(1, cfg.rows or 1)
+    local cols    = math.ceil((cfg.numButtons or 12) / rows)
+    local barW    = cols * size + (cols - 1) * spacing
+    local barH    = rows * size + (rows - 1) * spacing
+
+    -- Container-Größe + Position
+    bar:SetSize(barW, barH)
+    bar:ClearAllPoints()
+    bar:SetPoint(cfg.point or "BOTTOM", UIParent, cfg.point or "BOTTOM",
+                 P(cfg.x or 0), P(cfg.y or 0))
+
+    -- Skalierung
+    bar:SetScale(cfg.scale or 1.0)
+
+    -- Buttons: erst alle verstecken, dann nur die aktiven re-positionieren
+    for i, btn in ipairs(bar.buttons) do
+        if i <= (cfg.numButtons or 12) then
+            local col = ((i - 1) % cols)
+            local row = math.floor((i - 1) / cols)
+            btn:SetSize(size, size)
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", bar, "TOPLEFT",
+                col * (size + spacing),
+               -row * (size + spacing))
+            btn:Show()
+            -- Hotkey/Count/Macro Sichtbarkeit
+            if btn.hotkeyText then
+                if cfg.showHotkey then btn.hotkeyText:Show()
+                else btn.hotkeyText:Hide() end
+            end
+            if btn.countText then
+                if cfg.showCount then btn.countText:Show()
+                else btn.countText:Hide() end
+            end
+            if btn.macroText then
+                if cfg.showMacro then btn.macroText:Show()
+                else btn.macroText:Hide() end
+            end
+            btn:UpdateAction()
+        else
+            btn:Hide()
+        end
+    end
+
+    -- Alpha + Fade
+    bar.targetAlpha  = cfg.alpha or 1.0
+    bar.currentAlpha = cfg.alpha or 1.0
+    bar:SetAlpha(bar.targetAlpha)
+
+    -- Show-Condition ist absichtlich NICHT von hier aufgerufen weil
+    -- RegisterStateDriver Tainting verursachen kann wenn aus dem
+    -- pcall-Self-Init heraus aufgerufen. Stattdessen wird es separat
+    -- aus ConfigUI nach User-Aktion getriggert.
+end
+
+-- Convenience: alle Bars updaten
+function AB:ApplyAllBarSettings()
+    for id in pairs(self.bars) do
+        self:ApplyBarSettings(id)
+    end
+end
+
+-- Position einer Bar setzen (von Drag-and-Drop oder Slider)
+function AB:SetBarPosition(barID, point, x, y)
+    if not V.db then V.db = {} end
+    V.db.actionBars = V.db.actionBars or {}
+    V.db.actionBars[barID] = V.db.actionBars[barID] or {}
+    V.db.actionBars[barID].point = point or "BOTTOM"
+    V.db.actionBars[barID].x = x or 0
+    V.db.actionBars[barID].y = y or 0
+    self:ApplyBarSettings(barID)
+end
+
 function AB:OnDisable()
     -- Bars verstecken und Blizzard wiederherstellen
     for _, bar in pairs(self.bars) do
@@ -793,3 +1173,28 @@ function AB:OnDisable()
         MainMenuBar:Show()
     end
 end
+
+-- ============================================================
+--  SELF-INIT
+--  Der VuloUI-Core ruft OnInitialize nur auf wenn das Sub-Addon
+--  zum Zeitpunkt von VuloUI's ADDON_LOADED bereits registriert
+--  ist. Sub-Addons mit Dependencies laden aber NACH VuloUI -> der
+--  initial-pass im Core wird verpasst. Wir triggern OnInitialize
+--  daher selbst beim eigenen ADDON_LOADED.
+-- ============================================================
+
+local selfInitFrame = CreateFrame("Frame")
+selfInitFrame:RegisterEvent("ADDON_LOADED")
+selfInitFrame:SetScript("OnEvent", function(self, event, addon)
+    if addon == "VuloUI_ActionBars" then
+        if not AB.initialized then
+            AB.initialized = true
+            local ok, err = pcall(function() AB:OnInitialize() end)
+            if not ok then
+                print("|cffff0000VuloUI ActionBars OnInitialize ERROR:|r "
+                      ..tostring(err))
+            end
+        end
+        self:UnregisterAllEvents()
+    end
+end)
