@@ -363,6 +363,17 @@ local function CreateActionButton(barID, slot, cfg)
     btn.macroText = macroName
     if not cfg.showMacro then macroName:Hide() end
 
+    -- ── GCD-INDICATOR (dünner Balken am Boden) ──────────────
+    -- Animiert während Global Cooldown aktiv ist. Wird vom Ticker in
+    -- AB._gcdTicker (siehe unten) aktualisiert.
+    local gcdBar = btn:CreateTexture(nil, "OVERLAY", nil, 7)
+    gcdBar:SetColorTexture(0.30, 0.65, 1.0, 0.85)
+    gcdBar:SetHeight(P(2))
+    gcdBar:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    gcdBar:SetWidth(0)
+    gcdBar:Hide()
+    btn._gcdBar = gcdBar
+
     -- ── USABLE-OVERLAY (Ausgegraut wenn nicht nutzbar) ───────
     btn.notUsable = btn:CreateTexture(nil, "OVERLAY")
     btn.notUsable:SetAllPoints()
@@ -1148,6 +1159,64 @@ function AB:OnEnable()
     end
     UpdateAllButtons()
 end
+
+-- ============================================================
+--  GCD INDICATOR
+--  Dünner Balken am Boden jedes Action-Buttons der während Global
+--  Cooldown läuft von der vollen Breite zu 0 zurückzieht.
+-- ============================================================
+local function GetGCDInfo()
+    -- 61304 ist Blizzards Global-Cooldown-Spell, seit Jahren stabil.
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local info = C_Spell.GetSpellCooldown(61304)
+        if info then return info.startTime or 0, info.duration or 0 end
+    elseif GetSpellCooldown then
+        local s, d = GetSpellCooldown(61304)
+        return s or 0, d or 0
+    end
+    return 0, 0
+end
+
+AB._gcdTicker = nil
+
+local function StartGCDTicker()
+    if AB._gcdTicker then return end
+    if not (V.db and V.db.actionBars
+            and V.db.actionBars.showGCD ~= false) then
+        return  -- via Toggle deaktiviert
+    end
+    AB._gcdTicker = C_Timer.NewTicker(0.05, function()
+        local s, d = GetGCDInfo()
+        local now = GetTime()
+        local remaining = (s + d) - now
+        if d <= 0 or remaining <= 0 then
+            for _, bs in pairs(AB.buttons) do
+                for _, b in ipairs(bs) do
+                    if b._gcdBar then b._gcdBar:Hide() end
+                end
+            end
+            if AB._gcdTicker then
+                AB._gcdTicker:Cancel()
+                AB._gcdTicker = nil
+            end
+            return
+        end
+        local progress = (now - s) / d  -- 0 → 1
+        for _, bs in pairs(AB.buttons) do
+            for _, b in ipairs(bs) do
+                if b._gcdBar then
+                    b._gcdBar:Show()
+                    b._gcdBar:SetWidth(b:GetWidth() * (1 - progress))
+                end
+            end
+        end
+    end)
+end
+
+local gcdEvent = CreateFrame("Frame")
+gcdEvent:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+gcdEvent:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+gcdEvent:SetScript("OnEvent", function() StartGCDTicker() end)
 
 -- Eine einzelne Bar aktivieren (von ConfigUI aufgerufen)
 function AB:EnableBar(barID)
